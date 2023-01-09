@@ -10,19 +10,19 @@ def io_parser():
     return args.indir, args.outdir
 
 
-def read_file(file):
+def r_file(file):
     with open(file, 'r', errors='replace') as f:
         text = f.read()
     return text
 
 
-def read_file_line(file):
+def r_file_line(file):
     with open(file, 'r') as f:
         orig, plag = f.readline().split()
     return orig, plag
 
 
-def write_in_file(file, value):
+def w_in_file(file, value):
     with open(file, 'a') as f:
         f.write(str(value))
 
@@ -30,37 +30,35 @@ def write_in_file(file, value):
 class FileManager:
     def __init__(self):
         self.input_file, self.output_file = io_parser()
-        self.inp_orig = None
-        self.inp_plag = None
-        self._cur_orig_text = None
-        self._cur_plag_text = None
+        self.input_origin = None
+        self.input_plagiat = None
+        self._cur_original_txt = None
+        self._cur_plagiat_txt = None
 
     def next_text(self):
-        self.inp_orig, self.inp_plag = read_file_line(self.input_file)
-        self._cur_orig_text = read_file(self.inp_orig)
-        self._cur_plag_text = read_file(self.inp_plag)
+        self.input_origin, self.input_plagiat = r_file_line(self.input_file)
+        self._cur_original_txt = r_file(self.input_origin)
+        self._cur_plagiat_txt = r_file(self.input_plagiat)
 
     @property
     def orig(self):
-        return self._cur_orig_text
+        return self._cur_original_txt
 
     @orig.setter
     def orig(self, value):
-        self._cur_orig_text = value
+        self._cur_original_txt = value
 
     @property
     def plag(self):
-        return self._cur_plag_text
+        return self._cur_plagiat_txt
 
     @plag.setter
     def plag(self, value):
-        self._cur_plag_text = value
+        self._cur_plagiat_txt = value
 
 
 class Visitor(ast.NodeVisitor):
-    """
-    Collects list of variables
-    """
+    
     def __init__(self):
         self.list = set()
 
@@ -69,7 +67,8 @@ class Visitor(ast.NodeVisitor):
             self.list.add(node.id)
 
 
-class Normalize(ast.NodeTransformer):   # troubles
+class Normalize(ast.NodeTransformer):   # trou
+    les
     """
         def visit_Name(self, node):
         if True:    # change if
@@ -94,71 +93,71 @@ def processed_prog_text(text):
     return processed_text
 
 
-def levenstein_distance(text1, text2):
-    a, b = len(text1), len(text2)
-    if a > b:
-        text1, text2 = text2, text1
-        a, b = b, a
+def Leven_distance(s1, s2):
+    lent1, lent2 = len(s1), len(s2)
+    if lent1 > lent2:
+        s1, s2 = s2, s1
+        lent1, lent2 = lent2, lent1
 
-    cur_row = range(a + 1)
-    for i in range(1, b + 1):
-        prev_row = cur_row
-        cur_row = [i] + [0] * a
+    cur = range(lent1 + 1)
+    for i in range(1, lent2 + 1):
+        prev = cur
+        cur = [i] + [0] * lent1
 
-        for j in range(1, a + 1):
-            add = prev_row[j] + 1
-            delete = cur_row[j - 1] + 1
-            change = prev_row[j - 1]
+        for j in range(1, lent1 + 1):
+            add = prev[j] + 1
+            delete = cur[j - 1] + 1
+            change = prev[j - 1]
 
-            if text1[j - 1] != text2[i - 1]:
+            if s1[j - 1] != s2[i - 1]:
                 change += 1
 
-            cur_row[j] = min(add, delete, change)
+            cur[j] = min(add, delete, change)
 
-    return cur_row[a]
+    return cur[lent1]
 
 
-def damerau_levenshtein_distance(text1, text2):
-    len1 = len(text1)
-    len2 = len(text2)
-    dist = [[0 for i in range(len2 + 1)] for j in range(len1 + 1)]
+def damerau_levenshtein_distance(s1, s2):
+    len1 = len(s1)
+    len2 = len(s2)
+    distance = [[0 for i in range(len2 + 1)] for j in range(len1 + 1)]
 
     for i in range(len1 + 1):
-        dist[i][0] = i
+        distance[i][0] = i
 
     for j in range(len2 + 1):
-        dist[0][j] = j
+        distance[0][j] = j
 
     for i in range(1, len1 + 1):
         for j in range(1, len2 + 1):
 
-            if text1[i - 1] == text2[j - 1]:
+            if s1[i - 1] == s2[j - 1]:
                 cost = 0
             else:
                 cost = 1
 
-            dist[i][j] = min(
-                dist[i - 1][j] + 1,  # delete
-                dist[i][j - 1] + 1,  # add
-                dist[i - 1][j - 1] + cost,  # change
+            distance[i][j] = min(
+                distance[i - 1][j] + 1,  # delete
+                distance[i][j - 1] + 1,  # add
+                distance[i - 1][j - 1] + cost,  # change
             )
 
-            if i - 1 and j - 1 and text1[i - 1] == text2[j - 2] and text1[i - 2] == text2[j - 1]:
-                dist[i][j] = min(dist[i][j], dist[i - 2][j - 2] + 1)  # transpose
+            if i - 1 and j - 1 and s1[i - 1] == s2[j - 2] and s1[i - 2] == s2[j - 1]:
+                distance[i][j] = min(distance[i][j], distance[i - 2][j - 2] + 1)  # transpose
 
-    for i in dist:
+    for i in distance:
         print(i)
-    return dist[-1][-1]
+    return distance[-1][-1]
 
 
 def run():
     a = FileManager()
 
     for line in open(a.input_file, 'r'):
-        a.inp_orig, a.inp_plag = line.split()
-        a.orig = read_file(a.inp_orig)
-        a.plag = read_file(a.inp_plag)
-        print(a.inp_orig)
+        a.input_origin, a.input_plagiat = line.split()
+        a.orig = r_file(a.input_origin)
+        a.plag = r_file(a.input_plagiat)
+        print(a.input_origin)
 
         try:
             a.orig = processed_prog_text(a.orig)
@@ -166,15 +165,15 @@ def run():
         except SyntaxError:
             pass
 
-        diff = levenstein_distance(a.orig, a.plag)    # may be damerau_levenstein_distance
-        mlen = len(max(a.orig, a.plag))
-        if mlen == 0:
+        difference = Leven_distance(a.orig, a.plag)
+        maxlen = len(max(a.orig, a.plag))
+        if maxlen == 0:
             result = 1.0
-            write_in_file(a.output_file, result)
+            w_in_file(a.output_file, result)
             continue
 
-        result = round((mlen - diff) / mlen, 4)
-        write_in_file(a.output_file, result)
+        result = round((maxlen - difference) / maxlen, 4)
+        w_in_file(a.output_file, result)
 
 
 run()
